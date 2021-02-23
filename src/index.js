@@ -82,8 +82,11 @@ async function CompressImg(path) {
 
 	Fs.readdir(pathName, async (err, files) => {
 		for (var i=0; i<files.length; i++) {
-			const res = await CompressImg(dir + files[i])
-			console.log(res)
+			const type = files[i].substring(files[i].lastIndexOf(".") + 1)
+			if(type === "png" || type === "jpg") {
+				const res = await CompressImg(dir + files[i])
+				console.log(res)
+			}
 		}
 	})
 	spinner.stop()
