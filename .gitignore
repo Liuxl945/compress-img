@@ -18,6 +18,10 @@ selenium-debug.log
 *.njsproj
 *.sln
 *.local
-img
+*.png
+*.jpg
+*.jpeg
+*.svg
+*.gif
 
 yarn.lock
