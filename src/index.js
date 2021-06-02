@@ -12,6 +12,17 @@ const TINYIMG_URL = [
 	"tinypng.com"
 ];
 
+function mkdirs(dirpath){
+
+    if (!Fs.existsSync(Path.dirname(dirpath))) {
+        mkdirs(Path.dirname(dirpath))
+    }
+    if (!Fs.existsSync(dirpath)) {
+        Fs.mkdirSync(dirpath)
+    }
+}
+
+
 function RandomHeader() {
 	const ip = new Array(4).fill(0).map(() => parseInt(Math.random() * 255)).join(".");
 	const index = RandomNum(0, 1);
@@ -57,15 +68,23 @@ function DownloadImg(url) {
 	});
 }
 
-async function CompressImg(path) {
+async function CompressImg(path, pathName, directory = undefined) {
 	try {
+		let dir = "img"
+
+		if(directory) {
+			dir = dir + (path.replace(pathName, "")).replace(Path.basename(path), "")
+			mkdirs(Path.join(dir))
+		}
+		
 		const file = Fs.readFileSync(path, "binary");
 		const obj = await UploadImg(file);
 		const data = await DownloadImg(obj.output.url);
 		const oldSize = Chalk.redBright(ByteSize(obj.input.size));
 		const newSize = Chalk.greenBright(ByteSize(obj.output.size));
 		const ratio = Chalk.blueBright(RoundNum(1 - obj.output.ratio, 2, true));
-		const dpath = Path.join("img", Path.basename(path));const msg = `${Figures.tick} Compressed [${Chalk.yellowBright(path)}] completed: Old Size ${oldSize}, New Size ${newSize}, Optimization Ratio ${ratio}`;
+		const dpath = Path.join(dir, Path.basename(path));
+		const msg = `${Figures.tick} Compressed [${Chalk.yellowBright(path)}] completed: Old Size ${oldSize}, New Size ${newSize}, Optimization Ratio ${ratio}`;
 		Fs.writeFileSync(dpath, data, "binary");
 		return Promise.resolve(msg);
 	} catch (err) {
@@ -80,15 +99,27 @@ async function CompressImg(path) {
 	const dir = "src/img/"
 	const pathName = Path.resolve(dir)
 
-	Fs.readdir(pathName, async (err, files) => {
-		for (var i=0; i<files.length; i++) {
-			const type = files[i].substring(files[i].lastIndexOf(".") + 1)
-			if(type === "png" || type === "jpg") {
-				const res = await CompressImg(dir + files[i])
-				console.log(res)
+	function readFileList(dir, directory = undefined) {
+		const files = Fs.readdirSync(dir)
+		files.forEach(async item => {
+			let fullPath = Path.join(dir, item)
+			const stat = Fs.statSync(fullPath)
+
+			if (stat.isDirectory()) { 
+				readFileList(fullPath, item)
+			}else {
+
+				const type = item.substring(item.lastIndexOf(".") + 1)
+				if(type === "png" || type === "jpg") {
+					const res = await CompressImg(fullPath , pathName, directory)
+					console.log(res)
+				}
 			}
-		}
-	})
+		})
+	}
+	readFileList(pathName)
+
+
 	spinner.stop()
 	// const res = await CompressImg("src/pig.png");
 	// console.log(res);

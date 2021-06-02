@@ -1,2 +1,0 @@
-# compress-img
-compress-img
